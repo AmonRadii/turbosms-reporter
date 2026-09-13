@@ -1,0 +1,19 @@
+[project]
+name = "turbosms-month-report"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "dotenv>=0.9.9",
+    "lxml>=6.1.3",
+    "requests>=2.34.2",
+]
+
+[project.scripts]
+turbosms-month-report = "turbosms_month_report:main"
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
