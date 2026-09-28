@@ -151,6 +151,8 @@ def parse_period_data(
     Returns:
         dict: Словник з наступною структурою:
             {
+                "start_date": str, # Дата й час початку періоду
+                "end_date": str, # Дата й час кінця періоду
                 "total_spent": float,  # Загальні витрати за перід
                 "template_results": {  # Витрати за кожним шаблоном
                     "фрагмент_тексту": float,
@@ -175,6 +177,8 @@ def parse_period_data(
         template_results[fragment] = amount
 
     return {
+        "start_date": start_date,
+        "end_date": end_date,
         "total_spent": total_spent,
         "template_results": template_results,
     }
