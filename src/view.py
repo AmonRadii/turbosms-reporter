@@ -14,9 +14,20 @@ logger = logging.getLogger(__name__)
 
 
 class TemplateEditDialog(wx.Dialog):
-    """Кастомний діалог введення/редагування шаблону."""
+    """Кастомне діалогове вікно для створення або редагування шаблону пошуку.
+
+    Надає текстове поле для введення рядка шаблону, а такожкнопки підтвердження і скасування.
+    """
 
     def __init__(self, parent, title: str, initial_value: str = ""):
+        """Ініціалізує діалогове вікно редагування шаблону.
+
+        Args:
+            parent (wx.Window): Батьківський компонент інтерфейсу.
+            title (str): Заголовок вікна.
+            initial_value (str, optional): Початкове значення текстового поля.
+                За замовчуванням "".
+        """
         super().__init__(parent, title=title, size=(350, 150))
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -31,13 +42,27 @@ class TemplateEditDialog(wx.Dialog):
         self.CenterOnParent()
 
     def get_value(self) -> str:
+        """Отримує введене значення шаблону без зайвих пробілів на початку та в кінці.
+
+        Returns:
+            str: Очищений рядок шаблону.
+        """
         return self.text_ctrl.GetValue().strip()
 
 
 class TemplatesDialog(wx.Dialog):
-    """Вікно управління шаблонами пошуку."""
+    """Вікно управління списками шаблонів пошуку.
+
+    Дозволяє переглядати, додавати, редагувати та видаляти текстові шаблони,
+    які використовуються для фільтрації та підрахунку витрат у звіті.
+    """
 
     def __init__(self, parent):
+        """Ініціалізує вікно управління шаблонами та завантажує їхній список.
+
+        Args:
+            parent (wx.Window): Батьківський компонент інтерфейсу.
+        """
         super().__init__(parent, title="Шаблони пошуку", size=(450, 350))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -65,17 +90,27 @@ class TemplatesDialog(wx.Dialog):
         self._load_templates()
 
     def _load_templates(self):
+        """Завантажує список шаблонів із конфігураційного файлу та відображає їх у списку."""
         self.list_box.Clear()
         templates = get_search_templates()
         for t in templates:
             self.list_box.Append(t)
 
     def _save_templates(self):
+        """Зберігає поточний вміст елемента ListBox у конфігураційний файл.
+
+        Виводить повідомлення про помилку, якщо запис не вдався.
+        """
         templates = [self.list_box.GetString(i) for i in range(self.list_box.GetCount())]
         if not save_search_templates(templates):
             wx.MessageBox("Не вдалося зберегти шаблони!", "Помилка", wx.OK | wx.ICON_ERROR)
 
     def _add_item(self, event):
+        """Обробник події натискання кнопки додавання нового шаблону.
+
+        Args:
+            event (wx.CommandEvent): Об'єкт події wxPython.
+        """
         dlg = TemplateEditDialog(self, title="Новий шаблон")
         if dlg.ShowModal() == wx.ID_OK:
             text = dlg.get_value()
@@ -85,6 +120,11 @@ class TemplatesDialog(wx.Dialog):
         dlg.Destroy()
 
     def _edit_item(self, event):
+        """Обробник події натискання кнопки редагування обраного шаблону.
+
+        Args:
+            event (wx.CommandEvent): Об'єкт події wxPython.
+        """
         sel = self.list_box.GetSelection()
         if sel == wx.NOT_FOUND:
             return
@@ -99,6 +139,11 @@ class TemplatesDialog(wx.Dialog):
         dlg.Destroy()
 
     def _delete_item(self, event):
+        """Обробник події натискання кнопки видалення обраного шаблону.
+
+        Args:
+            event (wx.CommandEvent): Об'єкт події wxPython.
+        """
         sel = self.list_box.GetSelection()
         if sel != wx.NOT_FOUND:
             self.list_box.Delete(sel)
@@ -106,9 +151,18 @@ class TemplatesDialog(wx.Dialog):
 
 
 class CookiesDialog(wx.Dialog):
-    """Вікно оновлення PHPSESSID."""
+    """Вікно оновлення токена сесії PHPSESSID.
+
+    Забезпечує можливість введення та збереження значення cookies, необхідного
+    для авторизації запитів до особистого кабінету TurboSMS.
+    """
 
     def __init__(self, parent):
+        """Ініціалізує вікно оновлення cookies та завантажує поточне значення.
+
+        Args:
+            parent (wx.Window): Батьківський компонент інтерфейсу.
+        """
         super().__init__(parent, title="Оновлення PHPSESSID", size=(380, 160))
 
         sizer = wx.BoxSizer(wx.VERTICAL)
@@ -128,10 +182,16 @@ class CookiesDialog(wx.Dialog):
         self._load_cookie()
 
     def _load_cookie(self):
+        """Завантажує поточне значення PHPSESSID із конфігураційного файлу."""
         cookies = get_cookies_data()
         self.entry_sessid.SetValue(cookies.get("PHPSESSID", ""))
 
     def _save_cookie(self, event):
+        """Зберігає нове значення PHPSESSID у конфігураційний файл.
+
+        Args:
+            event (wx.CommandEvent): Об'єкт події wxPython.
+        """
         new_id = self.entry_sessid.GetValue().strip()
         if not new_id:
             return
@@ -144,8 +204,14 @@ class CookiesDialog(wx.Dialog):
 
 
 class MainFrame(wx.Frame):
+    """Головне вікно програми TurboSMS Report Generator.
+
+    Містить елементи управління для введення часового інтервалу, виклику
+    допоміжних діалогових вікон та запуску процесу генерації звіту.
+    """
 
     def __init__(self):
+        """Ініціалізує головне вікно програми, його макет та обробники подій."""
         super().__init__(
             None,
             title="TurboSMS Report Generator",
@@ -201,16 +267,35 @@ class MainFrame(wx.Frame):
         self.btn_generate.Bind(wx.EVT_BUTTON, self._generate_report)
 
     def _open_templates(self, event):
+        """Відкриває діалогове вікно управління шаблонами пошуку.
+
+        Args:
+            event (wx.CommandEvent): Об'єкт події wxPython.
+        """
         dlg = TemplatesDialog(self)
         dlg.ShowModal()
         dlg.Destroy()
 
     def _open_cookies(self, event):
+        """Відкриває діалогове вікно оновлення авторизаційного токена PHPSESSID.
+
+        Args:
+            event (wx.CommandEvent): Об'єкт події wxPython.
+        """
         dlg = CookiesDialog(self)
         dlg.ShowModal()
         dlg.Destroy()
 
     def _generate_report(self, event):
+        """Обробляє натискання кнопки формування звіту.
+
+        Валідує введення дат, запитує шлях для збереження файлу через `wx.FileDialog`
+        та запускає окремий фоновий потік для виконання парсингу та експорту
+        без блокування головного інтерфейсу.
+
+        Args:
+            event (wx.CommandEvent): Об'єкт події wxPython.
+        """
         start_date = self.entry_start.GetValue().strip()
         end_date = self.entry_end.GetValue().strip()
 
@@ -256,11 +341,17 @@ class MainFrame(wx.Frame):
         threading.Thread(target=_worker, daemon=True).start()
 
     def _reset_generate_button(self):
+        """Відновлює початковий активний стан та заголовок кнопки формування звіту."""
         self.btn_generate.Enable()
         self.btn_generate.SetLabel("Сформувати звіт")
 
 
 def main():
+    """Точка входу для запуску графічного додатка wxPython.
+
+    Створює екземпляр `wx.App`, ініціалізує та відображає `MainFrame`,
+    після чого запускає головний цикл обробки подій `MainLoop`.
+    """
     app = wx.App(False)
     frame = MainFrame()
     frame.Show()

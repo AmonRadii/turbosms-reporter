@@ -37,7 +37,16 @@ DEFAULT_PAYLOAD = {
 
 
 def load_templates(filepath: Union[str, Path] = "search_templates.json") -> List[str]:
-    """Вивантажує пошукові шаблони зі списку всередині 'search_templates.json'."""
+    """Зчитує та вивантажує список пошукових шаблонів із JSON-файлу.
+
+    Args:
+        filepath (Union[str, Path], optional): Шлях до JSON-файлу, що містить
+            список текстових шаблонів для пошуку. За замовчуванням "search_templates.json".
+
+    Returns:
+        List[str]: Список текстових рядків (шаблонів) для фільтрації повідомлень.
+            Повертає порожній список, якщо вказаний файл не існує.
+    """
     path = Path(filepath)
     if not path.exists():
         return []
@@ -47,7 +56,25 @@ def load_templates(filepath: Union[str, Path] = "search_templates.json") -> List
 
 
 def get_authenticated_session(cookies_path: Union[str, Path] = "cookies.json") -> requests.Session:
-    """Створює сесію з локального файлу 'cookies.json' та перевіряє її валідність."""
+    """Створює авторизовану HTTP-сесію requests на основі збережених cookie-даних.
+
+    Завантажує збережені cookie (зокрема PHPSESSID), налаштовує HTTP-заголовки
+    та виконує перевірочний GET-запит до сторінки відправлених повідомлень для
+    підтвердження активності сесії.
+
+    Args:
+        cookies_path (Union[str, Path], optional): Шлях до JSON-файлу з cookie-даними
+            авторизації. За замовчуванням "cookies.json".
+
+    Returns:
+        requests.Session: Об'єкт авторизованої сесії, готовий для виконання
+            запитів до сервісу TurboSMS.
+
+    Raises:
+        FileNotFoundError: Якщо файл із cookie-даними за вказаним шляхом відсутній.
+        PermissionError: Якщо сесія застаріла, недійсна або відбулося перенаправлення
+            на сторінку авторизації.
+    """
     path = Path(cookies_path)
 
     if not path.exists():
@@ -78,7 +105,26 @@ def fetch_spent_amount(
     end_date: str,
     text_fragment: str = "",
 ) -> float:
-    """Відправляє POST-запит до TurboSMS та повертає суму витрачених грошей за період."""
+    """Надсилає POST-запит до TurboSMS та парсить суму витрат за вказаний період.
+
+    Формує payload із датами і (опціонально) текстовим фільтром, виконує запит
+    до інтерфейсу TurboSMS і за допомогою BeautifulSoup з регулярними виразами
+    витягує та форматує підсумкову суму з HTML-відповіді.
+
+    Args:
+        session (requests.Session): Активна та авторизована сесія requests.
+        start_date (str): Початкова дата та час періоду у форматі 'DD.MM.YYYY hh:mm'.
+        end_date (str): Кінцева дата та час періоду у форматі 'DD.MM.YYYY hh:mm'.
+        text_fragment (str, optional): Фрагмент тексту для фільтрації SMS.
+            За замовчуванням "" (без фільтрації за текстом).
+
+    Returns:
+        float: Сума витрачених коштів у гривнях. Повертає 0.0, якщо елемент
+            із сумою не знайдено або виникла помилка конвертації типу.
+
+    Raises:
+        requests.HTTPError: Якщо HTTP-запит повернув статус помилки (наприклад, 40x або 50x).
+    """
     payload = DEFAULT_PAYLOAD.copy()
     payload.update({
         "date_from": start_date,
@@ -112,7 +158,35 @@ def parse_period_data(
     templates_path: Union[str, Path] = "search_templates.json",
     cookies_path: Union[str, Path] = "cookies.json",
 ) -> Dict:
-    """Збирає дані про витрати на відправку SMS за вказаний період часу."""
+    """Збирає підсумкові дані про витрати на SMS-повідомлення за визначений період.
+
+    Запитує загальну суму витрат без фільтрації, а також послідовно обраховує
+    витрати за кожним текстовим шаблоном із конфігураційного файлу.
+
+    Args:
+        start_date (str): Початкова дата та час періоду у форматі 'DD.MM.YYYY hh:mm'.
+        end_date (str): Кінцева дата та час періоду у форматі 'DD.MM.YYYY hh:mm'.
+        templates_path (Union[str, Path], optional): Шлях до JSON-файлу зі списком
+            пошукових шаблонів. За замовчуванням "search_templates.json".
+        cookies_path (Union[str, Path], optional): Шлях до JSON-файлу з cookie
+            авторизації. За замовчуванням "cookies.json".
+
+    Returns:
+        Dict: Словник із зібраними результатами наступної структури:
+            {
+                "start_date": str,
+                "end_date": str,
+                "total_spent": float,
+                "template_results": {
+                    "фрагмент_тексту": float,
+                    ...
+                }
+            }
+
+    Raises:
+        FileNotFoundError: Якщо файл авторизації cookies не знайдено.
+        PermissionError: Якщо авторизаційна сесія застаріла або недійсна.
+    """
     templates = load_templates(templates_path)
     session = get_authenticated_session(cookies_path)
 
