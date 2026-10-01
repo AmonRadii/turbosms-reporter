@@ -13,6 +13,7 @@ def export_period_data_to_excel(
 
     Створює новий документ Excel за допомогою openpyxl, записує загальні
     витрати за вказаний період та окремо витрати за кожним пошуковим шаблоном.
+    Опціонально записує звіт по витратах поза пошуковими шаблонами.
     Застосовує грошове форматування числових комірок (`# ##0.00" грн."`),
     виділяє заголовки жирним шрифтом та автоматично розширює ширину колонок
     відповідно до довжини тексту.
@@ -24,6 +25,7 @@ def export_period_data_to_excel(
             - "total_spent" (float): Загальна сума витрат.
             - "template_results" (Dict[str, float]): Словник з результатами
               витрат по кожному текстовому шаблону.
+            - "other_spent" (float, optional): Витрати поза шаблонами.
         output_path (Union[str, Path], optional): Шлях до файлу для збереження звіту.
             За замовчуванням "report.xlsx".
 
@@ -37,7 +39,7 @@ def export_period_data_to_excel(
     """
     wb = openpyxl.Workbook()
     ws = wb.active
-    ws.title = "Отчет TurboSMS"
+    ws.title = "Звіт TurboSMS"
 
     bold_font = Font(bold=True)
     currency_format = '# ##0.00" грн."'
@@ -67,7 +69,16 @@ def export_period_data_to_excel(
         ws[f"B{current_row}"].number_format = currency_format
         current_row += 1
 
-    # 4. Автоматичне розширення колонок
+    # 4. Витрати поза шаблонами (якщо розраховані)
+    if "other_spent" in parsed_data:
+        ws[f"A{current_row}"] = "Інші повідомлення:"
+        ws[f"A{current_row}"].font = bold_font
+        ws[f"B{current_row}"] = parsed_data["other_spent"]
+        ws[f"B{current_row}"].number_format = currency_format
+        ws[f"B{current_row}"].font = bold_font
+        current_row += 1
+
+    # 5. Автоматичне розширення колонок
     for col in ws.columns:
         max_len = 0
         col_letter = get_column_letter(col[0].column)

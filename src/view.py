@@ -215,7 +215,7 @@ class MainFrame(wx.Frame):
         super().__init__(
             None,
             title="TurboSMS Report Generator",
-            size=(460, 250),
+            size=(460, 280),
             style=wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX),
         )
 
@@ -251,6 +251,11 @@ class MainFrame(wx.Frame):
         btn_sizer.Add(self.btn_templates, 1, wx.RIGHT, 5)
         btn_sizer.Add(self.btn_cookies, 1, wx.LEFT, 5)
         main_sizer.Add(btn_sizer, 0, wx.EXPAND | wx.LEFT | wx.RIGHT, 15)
+
+        self.chk_other_expenses = wx.CheckBox(
+            panel, label="Порахувати витрати поза шаблонами"
+        )
+        main_sizer.Add(self.chk_other_expenses, 0, wx.LEFT | wx.RIGHT | wx.TOP, 15)
 
         self.btn_generate = wx.Button(panel, label="Сформувати звіт")
         font = self.btn_generate.GetFont()
@@ -303,6 +308,8 @@ class MainFrame(wx.Frame):
             wx.MessageBox("Будь ласка, заповніть початкову та кінцеву дати!", "Увага", wx.OK | wx.ICON_WARNING)
             return
 
+        calculate_other = self.chk_other_expenses.IsChecked()
+
         with wx.FileDialog(
             self,
             "Зберегти звіт як...",
@@ -321,7 +328,12 @@ class MainFrame(wx.Frame):
 
         def _worker():
             try:
-                saved_file = run_report(start_date, end_date, file_path)
+                saved_file = run_report(
+                    start_date, 
+                    end_date, 
+                    file_path,
+                    calculate_other=calculate_other
+                    )
                 wx.CallAfter(
                     wx.MessageBox,
                     f"Звіт успішно збережено за шляхом:\n{saved_file}",

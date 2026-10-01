@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
+from calculator import calculate_other_expenses
 from exporter import export_period_data_to_excel
 from parser import parse_period_data
 
@@ -104,17 +105,21 @@ def save_cookies_data(phpsessid: str) -> bool:
     return _save_json(COOKIES_PATH, data)
 
 
-def run_report(start_date: str, end_date: str, file_path: str) -> str:
+def run_report(start_date: str, end_date: str, file_path: str, calculate_other: bool = False) -> str:
     """Запускає повний проес збірки звіту за вказаний період.
 
     Виконує парсинг витрат з сайту TurboSMS за обраний інтервал
-    дат на основі збережених пошукових шаблонів та cookie-файлів, після чого форматує
-    отримані дані та експортує їх в Excel-файл.
+    дат на основі збережених пошукових шаблонів та cookie-файлів.
+    За необхідністю обчислює витрати за повідомлення поза шаблонами
+    через модуль `calculator`. В кінці форматує отримані дані та 
+    експортує їх в Excel-файл.
 
     Args:
         start_date (str): Початкова дата періоду (формат 'ДД.ММ.ГГГГ').
         end_date (str): Кінцева дата періоду (формат 'ДД.ММ.ГГГГ').
         file_path (str): Шлях до файлу для збереження звіту (.xlsx).
+        calculate_other (bool, optional): Флаг увімкнення розрахунку витрат
+            на повідомлення поза шаблонами. За вмовчанням, False.
 
     Returns:
         str: Абсолютний шлях до створеного та збереженого файлу Excel.
@@ -128,4 +133,12 @@ def run_report(start_date: str, end_date: str, file_path: str) -> str:
         templates_path=SEARCH_TEMPLATES_PATH,
         cookies_path=COOKIES_PATH,
     )
+
+    if calculate_other:
+        total_spent = parsed_data.get("total_spent", 0.0)
+        template_results = parsed_data.get("template_results", {})
+        parsed_data["other_spent"] = calculate_other_expenses(
+            total_spent, template_results
+        )
+        
     return export_period_data_to_excel(parsed_data, file_path)
