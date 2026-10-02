@@ -1,6 +1,7 @@
 import logging
 import threading
 import wx
+from wx.lib.masked import TextCtrl as MaskedTextCtrl
 
 from main import (
     get_cookies_data,
@@ -40,6 +41,29 @@ class TemplateEditDialog(wx.Dialog):
 
         self.SetSizer(sizer)
         self.CenterOnParent()
+
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
+
+
+    def _on_char_hook(self, event):
+        """Обробляє перехоплення натискань клавіш у діалозі редагування шаблону.
+
+        Завершує роботу діалогового вікна зі статусом скасування (wx.ID_CANCEL)
+        при натисканні клавіші Escape або підтвердження (wx.ID_OK) при натисканні
+        Enter / Numpad Enter.
+
+        Args:
+            event (wx.KeyEvent): Об'єкт події перехоплення клавіатури wxPython.
+        """
+        key = event.GetKeyCode()
+        if key == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
+            return
+        elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            self.EndModal(wx.ID_OK)
+            return
+        event.Skip()
+
 
     def get_value(self) -> str:
         """Отримує введене значення шаблону без зайвих пробілів на початку та в кінці.
@@ -87,7 +111,24 @@ class TemplatesDialog(wx.Dialog):
         self.btn_edit.Bind(wx.EVT_BUTTON, self._edit_item)
         self.btn_delete.Bind(wx.EVT_BUTTON, self._delete_item)
 
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
+
         self._load_templates()
+
+    def _on_char_hook(self, event):
+        """Обробляє перехоплення натискань клавіш у вікні управління шаблонами.
+
+        Закриває діалогове вікно зі статусом скасування (wx.ID_CANCEL)
+        при натисканні клавіші Escape.
+
+        Args:
+            event (wx.KeyEvent): Об'єкт події перехоплення клавіатури wxPython.
+        """
+        key = event.GetKeyCode()
+        if key == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
+            return
+        event.Skip()
 
     def _load_templates(self):
         """Завантажує список шаблонів із конфігураційного файлу та відображає їх у списку."""
@@ -179,7 +220,28 @@ class CookiesDialog(wx.Dialog):
         self.SetSizer(sizer)
 
         self.btn_save.Bind(wx.EVT_BUTTON, self._save_cookie)
+        # Обробка натиску клаіш
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
+
         self._load_cookie()
+
+    def _on_char_hook(self, event):
+        """Обробляє перехоплення натискань клавіш у діалоговому вікні.
+
+        Закриває вікно скасуванням при натисканні клавиші Escape або
+        ініціює збереження cookie при натисканні Enter / Numpad Enter.
+
+        Args:
+            event (wx.KeyEvent): Об'єкт події перехоплення клавіатури wxPython.
+        """
+        key = event.GetKeyCode()
+        if key == wx.WXK_ESCAPE:
+            self.EndModal(wx.ID_CANCEL)
+            return
+        elif key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            self._save_cookie(event)
+            return
+        event.Skip()
 
     def _load_cookie(self):
         """Завантажує поточне значення PHPSESSID із конфігураційного файлу."""
@@ -226,13 +288,20 @@ class MainFrame(wx.Frame):
         flex_sizer.AddGrowableCol(1, 1)
 
         flex_sizer.Add(wx.StaticText(panel, label="Початок періоду:"), 0, wx.ALIGN_CENTER_VERTICAL)
-        self.entry_start = wx.TextCtrl(panel, value="")
-        self.entry_start.SetHint("01.08.2026 00:00")
+        # Статичний шаблон із маскою ДД.ММ.ГГГГ ЧЧ:ММ
+        self.entry_start = MaskedTextCtrl(
+            panel,
+            mask="##.##.#### ##:##",
+            defaultValue="DD.MM.YYYY hh:mm",
+        )
         flex_sizer.Add(self.entry_start, 1, wx.EXPAND)
 
         flex_sizer.Add(wx.StaticText(panel, label="Кінець періоду:"), 0, wx.ALIGN_CENTER_VERTICAL)
-        self.entry_end = wx.TextCtrl(panel, value="")
-        self.entry_end.SetHint("31.08.2026 23:59")
+        self.entry_end = MaskedTextCtrl(
+            panel,
+            mask="##.##.#### ##:##",
+            defaultValue="DD.MM.YYYY hh:mm",
+        )
         flex_sizer.Add(self.entry_end, 1, wx.EXPAND)
 
         main_sizer.Add(flex_sizer, 0, wx.EXPAND | wx.ALL, 15)
@@ -270,6 +339,39 @@ class MainFrame(wx.Frame):
         self.btn_templates.Bind(wx.EVT_BUTTON, self._open_templates)
         self.btn_cookies.Bind(wx.EVT_BUTTON, self._open_cookies)
         self.btn_generate.Bind(wx.EVT_BUTTON, self._generate_report)
+
+        self.Bind(wx.EVT_CHAR_HOOK, self._on_char_hook)
+
+        wx.CallAfter(self.entry_start.SetInsertionPoint, 0)
+        wx.CallAfter(self.entry_end.SetInsertionPoint, 0)
+    
+    def _on_char_hook(self, event):
+        """Обробляє перехоплення натискань клавіш у головному вікні програми.
+
+        Закриває застосунок при натисканні клавіші Escape або послідовно
+        переміщує фокус між полями введення дат та кнопкою формування звіту
+        при натисканні Enter / Numpad Enter.
+
+        Args:
+            event (wx.KeyEvent): Об'єкт події перехоплення клавіатури wxPython.
+        """
+        key = event.GetKeyCode()
+
+        if key == wx.WXK_ESCAPE:
+            self.Close()
+            return
+
+        if key in (wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER):
+            focused = self.FindFocus()
+            if focused == self.entry_start:
+                self.entry_end.SetFocus()
+                wx.CallAfter(self.entry_end.SetInsertionPoint, 0)
+                return
+            elif focused == self.entry_end:
+                self.btn_generate.SetFocus()
+                return
+
+        event.Skip()
 
     def _open_templates(self, event):
         """Відкриває діалогове вікно управління шаблонами пошуку.
