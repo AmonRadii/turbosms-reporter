@@ -459,18 +459,3 @@ class MainFrame(wx.Frame):
         self.btn_generate.Enable()
         self.btn_generate.SetLabel("Сформувати звіт")
 
-
-def main():
-    """Точка входу для запуску графічного додатка wxPython.
-
-    Створює екземпляр `wx.App`, ініціалізує та відображає `MainFrame`,
-    після чого запускає головний цикл обробки подій `MainLoop`.
-    """
-    app = wx.App(False)
-    frame = MainFrame()
-    frame.Show()
-    app.MainLoop()
-
-
-if __name__ == "__main__":
-    main()

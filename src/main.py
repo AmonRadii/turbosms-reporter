@@ -3,6 +3,8 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
+import wx
+
 from calculator import calculate_other_expenses
 from exporter import export_period_data_to_excel
 from parser import parse_period_data
@@ -142,3 +144,31 @@ def run_report(start_date: str, end_date: str, file_path: str, calculate_other: 
         )
         
     return export_period_data_to_excel(parsed_data, file_path)
+
+
+def ensure_default_files():
+    """Создает базовые JSON-файлы, если они отсутствуют в директории приложения."""
+    if not SEARCH_TEMPLATES_PATH.exists():
+        _save_json(SEARCH_TEMPLATES_PATH, [])
+    
+    if not COOKIES_PATH.exists():
+        _save_json(COOKIES_PATH, {"PHPSESSID": "", "lang": "russian", "tur_cookie_hide": "1"})
+
+
+def main():
+    """Точка входу для запуску додатку.
+
+    Перевіряє наявність дефолтних файлів. Створює екземпляр `wx.App`. Імпортує клас `MainFrame` з `view.py`.
+    Іініціалізує та відображає `MainFrame`, після чого запускає головний цикл обробки подій `MainLoop`.
+    """
+    ensure_default_files()
+    app = wx.App(False)
+
+    from view import MainFrame
+    frame = MainFrame()
+    frame.Show()
+    app.MainLoop()
+
+
+if __name__ == "__main__":
+    main()
