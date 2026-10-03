@@ -266,7 +266,7 @@ class CookiesDialog(wx.Dialog):
 
 
 class MainFrame(wx.Frame):
-    """Головне вікно програми TurboSMS Report Generator.
+    """Головне вікно програми TurboSMS Reporter.
 
     Містить елементи управління для введення часового інтервалу, виклику
     допоміжних діалогових вікон та запуску процесу генерації звіту.
@@ -276,7 +276,7 @@ class MainFrame(wx.Frame):
         """Ініціалізує головне вікно програми, його макет та обробники подій."""
         super().__init__(
             None,
-            title="TurboSMS Report Generator",
+            title="TurboSMS Reporter",
             size=(460, 280),
             style=wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX),
         )
