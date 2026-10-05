@@ -19,7 +19,7 @@ jobs:
           - os: windows-latest
             artifact_name: TurboSMS_Reporter_Windows
             asset_extension: zip
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             artifact_name: TurboSMS_Reporter_Linux
             asset_extension: tar.gz
 
