@@ -1,9 +1,9 @@
 [project]
-name = "turbosms-month-report"
+name = "turbosms-reporter"
 version = "0.1.0"
-description = "Add your description here"
+description = "TurboSMS Report Generator desktop application"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "beautifulsoup4>=4.15.0",
     "dotenv>=0.9.9",
@@ -13,8 +13,8 @@ dependencies = [
     "wxpython>=4.3.1",
 ]
 
-[project.scripts]
-turbosms-month-report = "turbosms_month_report:main"
+[tool.uv]
+package = false
 
 [build-system]
 requires = ["uv_build>=0.12.13,<0.13.0"]
